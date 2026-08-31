@@ -1,0 +1,8 @@
+{ // Your actual configFile should not have comments in it - this is regular JSON!!!!!
+    "discordToken": "Your Token Here", // Token of discord bot user
+    "discordGuildID": "Your Guild ID Here",
+    "tatsuKey": "Your API Key Here", // Tatsu API Key
+    "updateInterval": 15, // How often should the API be polled in the background (in minutes)
+    "usersToChart": 10, // How many users should be shown in the graph?
+    "scoresToKeep": 250 // How many score records should be kept per user?
+}

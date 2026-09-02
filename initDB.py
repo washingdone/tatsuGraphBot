@@ -4,8 +4,8 @@ from tatsu.wrapper import ApiWrapper
 import asyncio
 import json
 from datetime import datetime
-import matplotlib.pyplot as plt
-import os
+from graphBuilders import generateTimeGraph
+
 
 async def getGuildRankings():
     config = json.load(open("./configFile"))
@@ -75,61 +75,8 @@ with sqlite3.connect("graphBot.db") as conn:
         # conn.commit() is automatically called at the end of the block 
         # if no exceptions were raised.
 
-def generate_score_chart():
-    config = json.load(open("./configFile"))
-    with sqlite3.connect("graphBot.db") as conn:
-        cursor = conn.cursor()
-        
-        # Query score history for top X ranked users
-        cursor.execute("""
-            SELECT user_id, score_value, timestamp 
-            FROM scores 
-            WHERE user_id IN (
-                SELECT id FROM users 
-                ORDER BY ranking ASC 
-                LIMIT ?
-            )
-            ORDER BY timestamp ASC;
-        """, (config["usersToChart"],))
-        
-        rows = cursor.fetchall()
-
-    if not rows:
-        print("No score data available to chart.")
-        return
-
-    # Group records by user_id
-    user_data = {}
-    for user_id, score, ts_str in rows:
-        if user_id not in user_data:
-            user_data[user_id] = {"times": [], "scores": []}
-        
-        # Parse ISO string format to datetime object
-        dt = datetime.fromisoformat(ts_str)
-        user_data[user_id]["times"].append(dt)
-        user_data[user_id]["scores"].append(score)
-
-    # Build graph
-    plt.figure(figsize=(10, 6))
-
-    for user_id, data in user_data.items():
-        plt.plot(data["times"], data["scores"], marker='o', label=f"User {user_id}")
-
-    plt.title(f"Score Progression - Top {config["usersToChart"]} Users")
-    plt.xlabel("Date / Time")
-    plt.ylabel("Score")
-    plt.legend(title="Users", bbox_to_anchor=(1.05, 1), loc='upper left')
-    plt.grid(True, linestyle="--", alpha=0.6)
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-
-    # Save image
-    output_image = os.path.join(os.path.dirname(os.path.abspath(__file__)), "top_users_scores.png")
-    plt.savefig(output_image, dpi=300)
-    plt.close()
-    print(f"Chart saved to {output_image}")
-
-
-
-
 asyncio.run(getGuildRankings())
+
+generateTimeGraph('rank_11_window_9', 11, usersToChart=9, afterDate=False)
+generateTimeGraph('rank_3_window_9', 3, usersToChart=9, afterDate=False)
+generateTimeGraph('rank_11_window_8', 11, usersToChart=8, afterDate=False)

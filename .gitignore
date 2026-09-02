@@ -1,6 +1,7 @@
 configFile
-top_users_scores.png
+*.png
 graphBot.db
+importDB.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

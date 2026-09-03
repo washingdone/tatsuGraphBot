@@ -103,8 +103,3 @@ with sqlite3.connect("graphBot.db") as conn:
         
         # conn.commit() is automatically called at the end of the block 
         # if no exceptions were raised.
-
-asyncio.run(getGuildRankings(json.load(open("./configFile"))))
-asyncio.run(cleanDB(json.load(open("./configFile"))))
-
-generateTimeGraph('me', '136609221234917376', )

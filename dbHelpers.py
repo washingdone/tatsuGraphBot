@@ -107,7 +107,4 @@ with sqlite3.connect("graphBot.db") as conn:
 asyncio.run(getGuildRankings(json.load(open("./configFile"))))
 asyncio.run(cleanDB(json.load(open("./configFile"))))
 
-generateTimeGraph('rank_11_window_9', 11, usersToChart=9, afterDate=False)
-generateTimeGraph('rank_3_window_9', 3, usersToChart=9, afterDate=False)
-generateTimeGraph('rank_11_window_8', 11, usersToChart=8, afterDate=False)
-generateTimeGraph('rank_15', 15, afterDate=False)
+generateTimeGraph('me', '136609221234917376', )

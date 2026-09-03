@@ -9,10 +9,23 @@ import matplotlib.patheffects as patheffects
 from adjustText import adjust_text
 
 
-def generateTimeGraph(client, requesterRank, usersToChart=10, beforeDate=False, afterDate=datetime.now()-relativedelta(years=1), useUsername=False):
+def generateTimeGraph(client, requesterID, usersToChart=10, beforeDate=False, afterDate=datetime.now()-relativedelta(years=1), useUsername=False):
     # TODO: remove fileout param once images are passed natively through discord instead of being saved locally
     # TODO: enhancement: allow for manually specifiying left and right bounds
     # TODO: review need for dedicated options in this function based on final selection of commands
+
+    if requesterID == 1:
+        requesterRank = 1
+    else:
+        with sqlite3.connect("graphBot.db") as conn:
+            with closing(conn.cursor()) as cursor:
+
+                cursor.execute("""
+                SELECT ranking FROM users
+                WHERE id IS ?
+                """, (requesterID,))
+                requesterRank = cursor.fetchone()[0]
+                print(requesterRank)
 
     leftCount = usersToChart // 2
     leftBound = requesterRank - leftCount
@@ -136,7 +149,8 @@ def generateTimeGraph(client, requesterRank, usersToChart=10, beforeDate=False, 
 
     # Save image
     outputImage = BytesIO()
-    plt.savefig(outputImage, dpi=300, facecolor=plt.gcf().get_facecolor(), transparent=False)
+    plt.savefig(outputImage, dpi=300, facecolor=plt.gcf().get_facecolor(), transparent=False, format='png')
+    outputImage.seek(0)
     plt.close()
 
     return outputImage

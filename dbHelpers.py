@@ -7,8 +7,34 @@ from datetime import datetime
 from graphBuilders import generateTimeGraph
 
 
-async def getGuildRankings():
-    config = json.load(open("./configFile"))
+#TODO: replace config json pull with object pull once passing config through bot class
+async def cleanDB(config):
+    tatsuApi = ApiWrapper(key=config["tatsuKey"])
+    result = await tatsuApi.get_guild_rankings(config["discordGuildID"])
+    rankings = result.rankings
+    activeUserIDs = [u.user_id for u in rankings]
+
+    if not activeUserIDs:
+        print(f"whoops, looks like there are no active scores!")
+        return
+
+    with sqlite3.connect("graphBot.db") as conn:
+        with closing(conn.cursor()) as cursor:
+            cursor.execute("PRAGMA foreign_keys = ON;")
+
+            cursor.execute("CREATE TEMP TABLE active_ids (id TEXT PRIMARY KEY)")
+        
+            cursor.executemany("INSERT INTO active_ids VALUES (?)", ((uID,) for uID in activeUserIDs))
+
+            # Delete users not in the temp table
+            cursor.execute("""
+            DELETE FROM users
+            WHERE id NOT IN (SELECT id FROM active_ids)
+            """)
+
+
+#TODO: replace config json pull with object pull once passing config through bot class
+async def getGuildRankings(config):
     tastuApi = ApiWrapper(key=config["tatsuKey"])
     result = await tastuApi.get_guild_rankings(config["discordGuildID"])
     rankings = result.rankings
@@ -47,7 +73,10 @@ async def getGuildRankings():
             );
             """, (config["scoresToKeep"],))
 
-            
+
+
+
+# TODO: remove these unneeded run commands once this is using a bot user instead of being ran manually for testing purposes
 
 # Using 'with' on conn automatically handles commits or rollbacks
 with sqlite3.connect("graphBot.db") as conn:
@@ -75,8 +104,10 @@ with sqlite3.connect("graphBot.db") as conn:
         # conn.commit() is automatically called at the end of the block 
         # if no exceptions were raised.
 
-asyncio.run(getGuildRankings())
+asyncio.run(getGuildRankings(json.load(open("./configFile"))))
+asyncio.run(cleanDB(json.load(open("./configFile"))))
 
 generateTimeGraph('rank_11_window_9', 11, usersToChart=9, afterDate=False)
 generateTimeGraph('rank_3_window_9', 3, usersToChart=9, afterDate=False)
 generateTimeGraph('rank_11_window_8', 11, usersToChart=8, afterDate=False)
+generateTimeGraph('rank_15', 15, afterDate=False)

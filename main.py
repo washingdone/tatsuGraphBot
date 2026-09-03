@@ -5,7 +5,7 @@ import json
 import sqlite3
 from contextlib import closing
 import datetime
-from initDB import getGuildRankings
+from dbHelpers import getGuildRankings
 import matplotlib.pyplot as matplot
 import os
 

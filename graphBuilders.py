@@ -2,25 +2,18 @@ import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import sqlite3
+from contextlib import closing
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.patheffects as patheffects
 from adjustText import adjust_text
 
-def getContrastingBackground(color):
-    # Standard W3C formula for relative luminance
-    r, g, b = color[:3]
-
-    luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b
-    
-    # If the color is bright, use black background. If dark, use white.
-    return (0.0, 0.0, 0.0, 0.25) if luminance > 0.5 else (1.0, 1.0, 1.0, 0.25)
 
 def generateTimeGraph(fileout, requesterRank, usersToChart=10, beforeDate=False, afterDate=datetime.now()-relativedelta(years=1), useUsername=False):
     # TODO: remove fileout param once images are passed natively through discord instead of being saved locally
+    # TODO: enhancement: allow for manually specifiying left and right bounds
 
-
-    leftCount = int((usersToChart - 1) / 2)
+    leftCount = usersToChart // 2
     leftBound = requesterRank - leftCount
     if leftBound < 1:
         leftBound = 1
@@ -42,19 +35,19 @@ def generateTimeGraph(fileout, requesterRank, usersToChart=10, beforeDate=False,
 
     #pull the relevant sections of data from the database and store it in the rows variable
     with sqlite3.connect("graphBot.db") as conn:
-        cursor = conn.cursor()
-        
-        cursor.execute("""
-            SELECT user_id, score_value, timestamp 
-            FROM scores 
-            WHERE user_id IN (
-                SELECT id FROM users 
-                WHERE ranking BETWEEN ? AND ?
-            )
-            ORDER BY timestamp ASC;
-        """, (leftBound, rightBound))
-        
-        rows = cursor.fetchall()
+        with closing(conn.cursor()) as cursor:
+
+          cursor.execute("""
+              SELECT user_id, score_value, timestamp 
+              FROM scores 
+              WHERE user_id IN (
+                  SELECT id FROM users 
+                  WHERE ranking BETWEEN ? AND ?
+              )
+              ORDER BY timestamp ASC;
+          """, (leftBound, rightBound))
+
+          rows = cursor.fetchall()
 
     if not rows:
         print("No score data available to chart.")
@@ -85,7 +78,7 @@ def generateTimeGraph(fileout, requesterRank, usersToChart=10, beforeDate=False,
             pass #TODO: userMember = userMember.name
         else:
             pass #TODO: userMember = userMember.nick
-        line = plt.plot(data["times"], data["scores"], marker='o') # TODO: remove variable and reference user color
+        line = plt.plot(data["times"], data["scores"], linewidth=3.0) # TODO: remove variable and reference user color
         color = line[0].get_color()
 
         # 2. Add inline text at the end of each series

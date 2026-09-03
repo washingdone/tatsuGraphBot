@@ -1,16 +1,12 @@
 import disnake
 from disnake.ext import tasks, commands
-from tatsu.wrapper import ApiWrapper
+from tatsu.wrapper import ApiWrapper  # NOTE: may not be needed, unsure at this time
 import json
 import sqlite3
 from contextlib import closing
 import datetime
+from dateutil.relativedelta import relativedelta
 from dbHelpers import getGuildRankings
-import matplotlib.pyplot as matplot
-import os
-
-# import asyncio # temp import for making python work 
-
 
 
 class graphBotOptions():
@@ -40,62 +36,6 @@ class graphBotClient(commands.InteractionBot):
         exit(1)
 
 
-
-def generateScoreChart():
-    with sqlite3.connect("graphBot.db") as conn:
-        cursor = conn.cursor()
-        
-        # Query score history for top X ranked users
-        cursor.execute("""
-            SELECT user_id, score_value, timestamp 
-            FROM scores 
-            WHERE user_id IN (
-                SELECT id FROM users 
-                ORDER BY ranking ASC 
-                LIMIT ?
-            )
-            ORDER BY timestamp ASC;
-        """, (options.usersToChart,))
-        
-        rows = cursor.fetchall()
-
-    if not rows:
-        print("No score data available to chart.")
-        return
-
-    # Group records by user_id
-    user_data = {}
-    for user_id, score, ts_str in rows:
-        if user_id not in user_data:
-            user_data[user_id] = {"times": [], "scores": []}
-        
-        # Parse ISO string format to datetime object
-        dt = datetime.fromisoformat(ts_str)
-        user_data[user_id]["times"].append(dt)
-        user_data[user_id]["scores"].append(score)
-
-    # Build graph
-    matplot.figure(figsize=(10, 6))
-
-    for user_id, data in user_data.items():
-        matplot.plot(data["times"], data["scores"], marker='o', label=f"User {user_id}")
-
-    matplot.title(f"Score Progression - Top {options.usersToChart} Users")
-    matplot.xlabel("Date / Time")
-    matplot.ylabel("Score")
-    matplot.legend(title="Users", bbox_to_anchor=(1.05, 1), loc='upper left')
-    matplot.grid(True, linestyle="--", alpha=0.6)
-    matplot.xticks(rotation=45)
-    matplot.tight_layout()
-
-    # Save image
-    output_image = os.path.join(os.path.dirname(os.path.abspath(__file__)), "top_users_scores.png")
-    matplot.savefig(output_image, dpi=300)
-    matplot.close()
-    print(f"Chart saved to {output_image}")
-
-
-
 try:
     client = graphBotClient()
 except BaseException as err:
@@ -107,5 +47,36 @@ try:
 except BaseException as err:
     print(f"Unable to generate configuration class, please double check your config file!\n\n{err=}")
 
+
+@client.slash_command(name="graph", description="draw a graph based on your user") # inform system we are registering a new command
+async def graph(interaction, usersToInclude=11, beforeDate=False, afterDate=datetime.now()-relativedelta=1, useNickname=True): # define new command
+    """
+    Remove all attachments from an archive post
+
+    Parameters
+    ----------
+
+    """
+    try:
+        pass
+    except:
+        print(f"An error has occured during the execution of graph(): \n{err.text=}\n{err.code=}\n{err.status=}\n{err.response=}\n{err.args=}\n{err=}") # print error to console
+        await interaction.response.send_message(content=f"Uh oh, An error has occured `{err.code=}`") # inform user of failure
+
+    try:
+        message = await options.channel.fetch_message(message_id) # find requested Message object
+        await message.edit(attachments=None) # remove attachments from Message
+    except disnake.HTTPException as err:
+        print(f"An error has occured during the execution of remove_attachments: \n{err.text=}\n{err.code=}\n{err.status=}\n{err.response=}\n{err.args=}\n{err=}") # print error to console
+        await interaction.response.send_message(content=f"Uh oh! An error has occured - Check your message ID!", delete_after=5) # inform user of failure
+    except:
+        print(f"An error has occured during the execution of remove_attachments: \n{err.text=}\n{err.code=}\n{err.status=}\n{err.response=}\n{err.args=}\n{err=}") # print error to console
+        await interaction.response.send_message(content=f"Uh oh, An error has occured `{err.code=}`") # inform user of failure
+    else:
+        await interaction.response.send_message(content="Success!", delete_after=5) # Inform user of completetion
+
+
+
+
+
 # client.run(options.token) # run client
-generateScoreChart()

@@ -14,8 +14,10 @@ def generateTimeGraph(client, requesterID, usersToChart=10, beforeDate=False, af
     # TODO: enhancement: allow for manually specifiying left and right bounds
     # TODO: review need for dedicated options in this function based on final selection of commands
 
+    isTop = False
     if requesterID == 1:
         requesterRank = 1
+        isTop = True
     else:
         with sqlite3.connect("graphBot.db") as conn:
             with closing(conn.cursor()) as cursor:
@@ -116,8 +118,11 @@ def generateTimeGraph(client, requesterID, usersToChart=10, beforeDate=False, af
             ])
             texts.append(txt)
 
+    if isTop:
+        plt.title(f"Score Progression - Top {usersToChart} Users - {timeFrameString}", color=axisColor)
+    else:
+        plt.title(f"Score Progression - Users Ranked {leftBound} to {rightBound} - {timeFrameString}", color=axisColor)
 
-    plt.title(f"Score Progression - Users Ranked {leftBound} to {rightBound} - {timeFrameString}", color=axisColor)
     plt.xlabel("Date / Time", color=axisColor)
     plt.ylabel("Score", color=axisColor)
 

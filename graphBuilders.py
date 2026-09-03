@@ -1,4 +1,4 @@
-import os
+from io import BytesIO
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import sqlite3
@@ -9,9 +9,10 @@ import matplotlib.patheffects as patheffects
 from adjustText import adjust_text
 
 
-def generateTimeGraph(fileout, requesterRank, usersToChart=10, beforeDate=False, afterDate=datetime.now()-relativedelta(years=1), useUsername=False):
+def generateTimeGraph(client, requesterRank, usersToChart=10, beforeDate=False, afterDate=datetime.now()-relativedelta(years=1), useUsername=False):
     # TODO: remove fileout param once images are passed natively through discord instead of being saved locally
     # TODO: enhancement: allow for manually specifiying left and right bounds
+    # TODO: review need for dedicated options in this function based on final selection of commands
 
     leftCount = usersToChart // 2
     leftBound = requesterRank - leftCount
@@ -134,13 +135,8 @@ def generateTimeGraph(fileout, requesterRank, usersToChart=10, beforeDate=False,
     plt.tight_layout()
 
     # Save image
-    output_image = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"zimage_{fileout}.png")
-    plt.savefig(output_image, dpi=300, facecolor=plt.gcf().get_facecolor(), transparent=False)
+    outputImage = BytesIO()
+    plt.savefig(outputImage, dpi=300, facecolor=plt.gcf().get_facecolor(), transparent=False)
     plt.close()
-    print(f"Chart saved to {output_image}")
 
-
-
-
-    return 0 #TODO return file output instead
-
+    return outputImage

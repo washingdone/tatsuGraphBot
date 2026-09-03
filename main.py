@@ -2,8 +2,6 @@ import disnake
 from disnake.ext import tasks, commands
 from tatsu.wrapper import ApiWrapper  # NOTE: may not be needed, unsure at this time
 import json
-import sqlite3
-from contextlib import closing
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from graphBuilders import generateTimeGraph
@@ -90,6 +88,6 @@ async def graphTop(interaction, users_to_include=10, before_date=False, after_da
         await interaction.response.send_message(content=f"Uh oh, An error has occured `{err.code=}`") # inform user of failure
 
 
-
+# TODO: Create task items for regular api polling
 
 client.run(options.token) # run client

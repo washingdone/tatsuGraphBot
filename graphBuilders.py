@@ -112,8 +112,8 @@ async def generateTimeGraph(client, requesterID, optionTuple):
     # Build graph 
     # TODO: convert to a seperate function once i've fixed needing an output file
     # NOTE: may not be needed
-    axisColor = '#72767d'
-    bgColor = (1.0, 1.0, 1.0, 0.15)
+    axisColor = '#1e1f22'
+    bgColor = (1.0, 1.0, 1.0, 0.25)
     plt.figure(figsize=(15, 9), facecolor=bgColor)
     texts = []
 
@@ -176,10 +176,14 @@ async def generateTimeGraph(client, requesterID, optionTuple):
     xmin, xmax = axis.get_xlim()
     axis.set_xlim(xmin, xmax + (xmax - xmin) * 0.12)  # Extends right boundary by 12%
     axis.set_facecolor(bgColor)
-    axis.tick_params(colors=axisColor, which='both')
+    
+    axis.tick_params(colors=axisColor, which='both', width=1.5)
+    for tick in axis.get_xticklabels() + axis.get_yticklabels():
+        tick.set_path_effects([patheffects.withStroke(linewidth=1.5, foreground='white', alpha=0.8)])
 
     for spine in axis.spines.values():
         spine.set_color(axisColor)
+        spine.set_linewidth(1.5)
 
     plt.grid(True, linestyle="--", alpha=0.6)
     adjust_text(

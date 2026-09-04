@@ -5,6 +5,7 @@ import json
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from graphBuilders import generateTimeGraph
+import dbHelpers
 
 
 class graphBotOptions():
@@ -16,6 +17,7 @@ class graphBotOptions():
         self.apiKey = config["tatsuKey"]
         self.updateInterval = config["updateInterval"]
         self.usersToChart = config["usersToChart"] # TODO: evaluate necessity
+        self.scoresToKeep = config["scoresToKeep"]
 
 class graphBotClient(commands.InteractionBot):
     async def on_ready(self):
@@ -32,6 +34,24 @@ class graphBotClient(commands.InteractionBot):
     except BaseException as err:
         print(f"Error generating configuration, double check your config file!\n{err=}")
         exit(1)
+
+class databasePoller(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.poll.start()
+
+    def cog_unload(self):
+        self.poll.cancel()
+
+    @tasks.loop(seconds=30.0)
+    async def poll(self):
+        await dbHelpers.getGuildRankings(self.bot.options)
+
+    @poll.before_loop
+    async def before_poll(self):
+        print('waiting for ready...')
+        await self.bot.wait_until_ready()
+
 
 
 try:

@@ -32,8 +32,8 @@ async def cleanDB(config):
 
 #TODO: replace config json pull with object pull once passing config through bot class
 async def getGuildRankings(config):
-    tastuApi = ApiWrapper(key=config["tatsuKey"])
-    result = await tastuApi.get_guild_rankings(config["discordGuildID"])
+    tastuApi = ApiWrapper(key=config.apiKey)
+    result = await tastuApi.get_guild_rankings(config.guild.id)
     rankings = result.rankings
     timestamp = datetime.now()
 
@@ -68,7 +68,7 @@ async def getGuildRankings(config):
                 )
                 WHERE row_num > ?
             );
-            """, (config["scoresToKeep"],))
+            """, (config.scoresToKeep,))
 
 
 

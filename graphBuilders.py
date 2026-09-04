@@ -94,7 +94,7 @@ async def generateTimeGraph(client, requesterID, usersToChart=10, beforeDate=Fal
         if useUsername:
             userPrintout = userMember.name
         else:
-            userPrintout = userMember.nick
+            userPrintout = userMember.nick or userMember.name
         plt.plot(data["times"], data["scores"], linewidth=3.0, color=color)
         
         # 2. Add inline text at the end of each series

@@ -7,11 +7,42 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import matplotlib.patheffects as patheffects
 from adjustText import adjust_text
+from disnake import errors as disErrors
 
 
-async def generateTimeGraph(client, requesterID, usersToChart=10, beforeDate=False, afterDate=datetime.now()-relativedelta(years=1), useUsername=False):
+def timeGraphOptionValidation(usersToChart, beforeDate=None, afterDate=datetime.now()-relativedelta(years=1), useUsername=False):
+    try:
+        usersToChart = int(usersToChart)
+    except (ValueError, TypeError):
+        raise TypeError(f'Error: {usersToChart} is not of type {int}')
+    
+    try:
+        if beforeDate is not None:
+            beforeDate = datetime.strptime(beforeDate, "%Y-%m-%d")
+        else:
+            beforeDate = False
+    except ValueError:
+        raise TypeError(f'Error: {beforeDate} is not in format YYYY-MM-DD')
+
+    try:
+        if isinstance(afterDate, str):
+            if afterDate == 'None':
+                afterDate = False
+            else:
+                afterDate = datetime.strptime(afterDate, "%Y-%m-%d")
+        if not isinstance(afterDate, datetime):
+            raise ValueError()
+    except ValueError:
+        raise TypeError(f'Error: {afterDate} is not in format YYYY-MM-DD or None')
+
+    return (usersToChart, beforeDate, afterDate, useUsername)
+
+
+async def generateTimeGraph(client, requesterID, optionTuple):
     # TODO: enhancement: allow for manually specifiying left and right bounds
-    # TODO: review need for dedicated options in this function based on final selection of commands
+    # TODO: enhancement-xl: allow for pulling milestone data and displaying them on the graph
+
+    usersToChart, beforeDate, afterDate, useUsername = optionTuple
     
     isTop = False
     if requesterID == 1:
@@ -88,13 +119,20 @@ async def generateTimeGraph(client, requesterID, usersToChart=10, beforeDate=Fal
     texts = []
 
     for userID, data in scoreData.items():
-        userMember = await client.options.guild.fetch_member(userID)
-        color = userMember.color.to_rgb()
-        color = "#{:02x}{:02x}{:02x}".format(*color)
-        if useUsername:
-            userPrintout = userMember.name
-        else:
-            userPrintout = userMember.nick or userMember.name
+        try:
+            userMember = await client.options.guild.fetch_member(userID)
+            color = userMember.color.to_rgb()
+            color = "#{:02x}{:02x}{:02x}".format(*color)
+            if useUsername:
+                userPrintout = userMember.name
+            else:
+                userPrintout = userMember.nick or userMember.name
+        except disErrors.NotFound:
+            missingUser = await client.fetch_user(userID)
+            userPrintout = missingUser.name
+            color = userMember.color.to_rgb()
+            color = "#{:02x}{:02x}{:02x}".format(*color) 
+
         plt.plot(data["times"], data["scores"], linewidth=3.0, color=color)
         
         # 2. Add inline text at the end of each series

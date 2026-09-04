@@ -5,8 +5,9 @@ from tatsu.wrapper import ApiWrapper  # NOTE: may not be needed, unsure at this 
 import json
 import datetime
 from dateutil.relativedelta import relativedelta
-from graphBuilders import generateTimeGraph
+from graphBuilders import generateTimeGraph, timeGraphOptionValidation
 import dbHelpers
+from traceback import print_exc as printTrace
 
 tz = datetime.datetime.now().astimezone().tzinfo
 midnight = datetime.time(hour=0, minute=0, second=0, tzinfo=tz)
@@ -62,16 +63,16 @@ class databasePoller(commands.Cog):
 class databaseCleaner(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.poll.start()
+        self.clean.start()
 
     def cog_unload(self):
-        self.poll.cancel()
+        self.clean.cancel()
 
     @tasks.loop(time=midnight)
     async def clean(self):
         print('Beginning database cleanup')
         cleaned = await dbHelpers.cleanDB(self.bot.options)
-        print(f'Database cleaned of {cleaned} users and their associated scores')
+        if cleaned > 0: print(f'Database cleaned of {cleaned} users and their associated scores')
 
     @clean.before_loop
     async def await_ready(self):
@@ -99,7 +100,7 @@ except BaseException as err:
 
 # TODO: build suggestion generators for the datetime.datetime entries
 @client.slash_command(name="graph", description="draw a graph based on your user") # inform system we are registering a new command
-async def graph(interaction, users_to_include=11, before_date=False, after_date=datetime.datetime.now()-relativedelta(years=1), use_nickname=True): # define new command
+async def graph(interaction, users_to_include=11, before_date=None, after_date=datetime.datetime.now()-relativedelta(years=1), use_nickname=True): # define new command
     """
     Remove all attachments from an archive post
 
@@ -111,16 +112,19 @@ async def graph(interaction, users_to_include=11, before_date=False, after_date=
     use_nickname: Toggle between using nicknames or usernames in the graph || Defaults to True
     """
     await interaction.response.defer()
+    await dbHelpers.cleanDB(client.options)
     try:
         requesterID = interaction.author.id
-        graph = await generateTimeGraph(client, requesterID, usersToChart=users_to_include, beforeDate=before_date, afterDate=after_date, useUsername=not use_nickname)
+        optionTuple = timeGraphOptionValidation(users_to_include, beforeDate=before_date, afterDate=after_date, useUsername=not use_nickname)
+        graph = await generateTimeGraph(client, requesterID, optionTuple)
         await interaction.edit_original_response(file=disnake.File(graph, filename="graph.png"))
     except BaseException as err:
-        print(f"An error has occured during the execution of graph(): \n{err.text=}\n{err.code=}\n{err.status=}\n{err.response=}\n{err.args=}\n{err=}") # print error to console
-        await interaction.edit_original_response(content=f"Uh oh, An error has occured `{err.code=}`") # inform user of failure
+        print(f"An error has occured during the execution of graph():") # print error to console
+        printTrace()
+        await interaction.edit_original_response(content=f"Uh oh, an error has occurred: `{type(err).__name__}: {err}`") # inform user of failure
 
 @client.slash_command(name="graph_top", description="draw a graph based on your user") # inform system we are registering a new command
-async def graphTop(interaction, users_to_include=10, before_date=False, after_date=datetime.datetime.now()-relativedelta(years=1), use_nickname=True): # define new command
+async def graphTop(interaction, users_to_include=10, before_date=None, after_date=datetime.datetime.now()-relativedelta(years=1), use_nickname=True): # define new command
     """
     Remove all attachments from an archive post
 
@@ -133,14 +137,17 @@ async def graphTop(interaction, users_to_include=10, before_date=False, after_da
     """
     await interaction.response.defer()
     try:
-        graph = await generateTimeGraph(client, 1, usersToChart=users_to_include, beforeDate=before_date, afterDate=after_date, useUsername=not use_nickname)
+        optionTuple = timeGraphOptionValidation(users_to_include, beforeDate=before_date, afterDate=after_date, useUsername=not use_nickname)
+        graph = await generateTimeGraph(client, 1, optionTuple)
         await interaction.edit_original_response(file=disnake.File(graph, filename="graph.png"))
     except Exception as err:
-        print(f"An error has occured during the execution of graph(): \n{err.text=}\n{err.code=}\n{err.status=}\n{err.response=}\n{err.args=}\n{err=}") # print error to console
-        await interaction.edit_original_response(content=f"Uh oh, An error has occured `{err.code=}`") # inform user of failure
+        print(f"An error has occured during the execution of graphTop():") # print error to console
+        printTrace()
+        await interaction.edit_original_response(content=f"Uh oh, an error has occurred: `{type(err).__name__}: {err}`") # inform user of failure
 
 
 # TODO: Create task items for regular api polling
 client.add_cog(databasePoller(client))
+client.add_cog(databaseCleaner(client))
 
 client.run(options.token) # run client

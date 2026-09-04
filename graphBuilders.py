@@ -155,12 +155,12 @@ async def generateTimeGraph(client, requesterID, optionTuple):
             texts.append(txt)
 
     if isTop:
-        plt.title(f"Score Progression - Top {usersToChart} Users - {timeFrameString}", color=axisColor)
+        plt.title(f"Score Progression - Top {usersToChart} Users - {timeFrameString}", color=axisColor,).set_path_effects([pathEffect])
     else:
-        plt.title(f"Score Progression - Users Ranked {leftBound} to {rightBound} - {timeFrameString}", color=axisColor)
+        plt.title(f"Score Progression - Users Ranked {leftBound} to {rightBound} - {timeFrameString}", color=axisColor).set_path_effects([pathEffect])
 
-    plt.xlabel("Date / Time", color=axisColor)
-    plt.ylabel("Score", color=axisColor)
+    plt.xlabel("Date / Time", color=axisColor).set_path_effects([pathEffect])
+    plt.ylabel("Score", color=axisColor).set_path_effects([pathEffect])
 
     def formatYAxis(x, pos):
         if abs(x) >= 1_000_000:

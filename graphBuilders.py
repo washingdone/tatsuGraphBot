@@ -25,13 +25,12 @@ def timeGraphOptionValidation(usersToChart, beforeDate=None, afterDate=datetime.
         raise TypeError(f'Error: {beforeDate} is not in format YYYY-MM-DD')
 
     try:
-        if isinstance(afterDate, str):
-            if afterDate == 'None':
-                afterDate = False
-            else:
-                afterDate = datetime.strptime(afterDate, "%Y-%m-%d")
         if not isinstance(afterDate, datetime):
-            raise ValueError()
+            if isinstance(afterDate, str):
+                if afterDate == 'None':
+                    afterDate = False
+                else:
+                    afterDate = datetime.strptime(afterDate, "%Y-%m-%d")
     except ValueError:
         raise TypeError(f'Error: {afterDate} is not in format YYYY-MM-DD or None')
 

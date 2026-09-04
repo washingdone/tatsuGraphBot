@@ -20,8 +20,7 @@ class graphBotOptions():
 class graphBotClient(commands.InteractionBot):
     async def on_ready(self):
         try:
-            pass
-            # options.guild = await client.fetch_guild(options.guild)
+            options.guild = await client.fetch_guild(options.guild)
         except BaseException as err:
             print(f"Error transforming guild ID to an object, please double check your config file before reporting this error!\nn{err=}")
             exit(1)
@@ -36,9 +35,11 @@ class graphBotClient(commands.InteractionBot):
 
 
 try:
-    client = graphBotClient()
+    intents = disnake.Intents.default()
+    intents.members = True
+    client = graphBotClient(intents=intents)
 except BaseException as err:
-    print(f"Client could not be initialized!\n\n{err=}")
+    print(f"Error loading intents, did disnake install correctly?\n{err=}")
     exit(1)
 
 try:
@@ -46,7 +47,12 @@ try:
 except BaseException as err:
     print(f"Unable to generate configuration class, please double check your config file!\n\n{err=}")
 
+try:
+    client.options = options
+except BaseException as err:
+    print(err)
 
+# TODO: build suggestion generators for the datetime entries
 @client.slash_command(name="graph", description="draw a graph based on your user") # inform system we are registering a new command
 async def graph(interaction, users_to_include=11, before_date=False, after_date=datetime.now()-relativedelta(years=1), use_nickname=True): # define new command
     """
@@ -59,13 +65,14 @@ async def graph(interaction, users_to_include=11, before_date=False, after_date=
     after_date: Only include scores after this date || Defaults to 1 year ago today
     use_nickname: Toggle between using nicknames or usernames in the graph || Defaults to True
     """
+    await interaction.response.defer()
     try:
         requesterID = interaction.author.id
-        graph = generateTimeGraph(client, requesterID, usersToChart=users_to_include, beforeDate=before_date, afterDate=after_date, useUsername=not use_nickname)
-        await interaction.response.send_message(file=disnake.File(graph, filename="graph.png"))
-    except:
+        graph = await generateTimeGraph(client, requesterID, usersToChart=users_to_include, beforeDate=before_date, afterDate=after_date, useUsername=not use_nickname)
+        await interaction.edit_original_response(file=disnake.File(graph, filename="graph.png"))
+    except BaseException as err:
         print(f"An error has occured during the execution of graph(): \n{err.text=}\n{err.code=}\n{err.status=}\n{err.response=}\n{err.args=}\n{err=}") # print error to console
-        await interaction.response.send_message(content=f"Uh oh, An error has occured `{err.code=}`") # inform user of failure
+        await interaction.edit_original_response(content=f"Uh oh, An error has occured `{err.code=}`") # inform user of failure
 
 @client.slash_command(name="graph_top", description="draw a graph based on your user") # inform system we are registering a new command
 async def graphTop(interaction, users_to_include=10, before_date=False, after_date=datetime.now()-relativedelta(years=1), use_nickname=True): # define new command
@@ -79,13 +86,13 @@ async def graphTop(interaction, users_to_include=10, before_date=False, after_da
     after_date: Only include scores after this date || Defaults to 1 year ago today
     use_nickname: Toggle between using nicknames or usernames in the graph || Defaults to True
     """
+    await interaction.response.defer()
     try:
-        requesterID = 1
-        graph = generateTimeGraph(client, requesterID, usersToChart=users_to_include, beforeDate=before_date, afterDate=after_date, useUsername=not use_nickname)
-        await interaction.response.send_message(file=disnake.File(graph, filename="graph.png"))
-    except:
+        graph = await generateTimeGraph(client, 1, usersToChart=users_to_include, beforeDate=before_date, afterDate=after_date, useUsername=not use_nickname)
+        await interaction.edit_original_response(file=disnake.File(graph, filename="graph.png"))
+    except Exception as err:
         print(f"An error has occured during the execution of graph(): \n{err.text=}\n{err.code=}\n{err.status=}\n{err.response=}\n{err.args=}\n{err=}") # print error to console
-        await interaction.response.send_message(content=f"Uh oh, An error has occured `{err.code=}`") # inform user of failure
+        await interaction.edit_original_response(content=f"Uh oh, An error has occured `{err.code=}`") # inform user of failure
 
 
 # TODO: Create task items for regular api polling

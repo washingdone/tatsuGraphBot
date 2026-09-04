@@ -9,11 +9,10 @@ import matplotlib.patheffects as patheffects
 from adjustText import adjust_text
 
 
-def generateTimeGraph(client, requesterID, usersToChart=10, beforeDate=False, afterDate=datetime.now()-relativedelta(years=1), useUsername=False):
-    # TODO: remove fileout param once images are passed natively through discord instead of being saved locally
+async def generateTimeGraph(client, requesterID, usersToChart=10, beforeDate=False, afterDate=datetime.now()-relativedelta(years=1), useUsername=False):
     # TODO: enhancement: allow for manually specifiying left and right bounds
     # TODO: review need for dedicated options in this function based on final selection of commands
-
+    
     isTop = False
     if requesterID == 1:
         requesterRank = 1
@@ -27,7 +26,6 @@ def generateTimeGraph(client, requesterID, usersToChart=10, beforeDate=False, af
                 WHERE id IS ?
                 """, (requesterID,))
                 requesterRank = cursor.fetchone()[0]
-                print(requesterRank)
 
     leftCount = usersToChart // 2
     leftBound = requesterRank - leftCount
@@ -81,22 +79,24 @@ def generateTimeGraph(client, requesterID, usersToChart=10, beforeDate=False, af
             scoreData[userID]["times"].append(dateTime)
             scoreData[userID]["scores"].append(score)
 
-    # Build graph TODO: convert to a seperate function once i've fixed needing an output file
+    # Build graph 
+    # TODO: convert to a seperate function once i've fixed needing an output file
+    # NOTE: may not be needed
     axisColor = '#72767d'
     bgColor = (1.0, 1.0, 1.0, 0.15)
     plt.figure(figsize=(15, 9), facecolor=bgColor)
-    # guild = client.get_guild(99199781900910592) #TODO: unhardcode the guild id and build the rest of the user data collector
     texts = []
 
     for userID, data in scoreData.items():
-        # userMember = guild.get_member(user_id)
+        userMember = await client.options.guild.fetch_member(userID)
+        color = userMember.color.to_rgb()
+        color = "#{:02x}{:02x}{:02x}".format(*color)
         if useUsername:
-            pass #TODO: userMember = userMember.name
+            userPrintout = userMember.name
         else:
-            pass #TODO: userMember = userMember.nick
-        line = plt.plot(data["times"], data["scores"], linewidth=3.0) # TODO: remove variable and reference user color
-        color = line[0].get_color()
-
+            userPrintout = userMember.nick
+        plt.plot(data["times"], data["scores"], linewidth=3.0, color=color)
+        
         # 2. Add inline text at the end of each series
         if data["times"] and data["scores"]:
             last_x = data["times"][-1]
@@ -105,7 +105,7 @@ def generateTimeGraph(client, requesterID, usersToChart=10, beforeDate=False, af
             txt = plt.text(
                 last_x,
                 last_y,
-                f" {userID}", 
+                f" {userPrintout}", 
                 ha="left",
                 va="center",
                 color=color,

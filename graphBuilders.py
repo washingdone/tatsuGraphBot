@@ -113,7 +113,7 @@ async def generateTimeGraph(client, requesterID, optionTuple):
     # TODO: convert to a seperate function once i've fixed needing an output file
     # NOTE: may not be needed
     axisColor = '#1e1f22'
-    bgColor = (1.0, 1.0, 1.0, 0.25)
+    bgColor = (0.75, 0.75, 0.75, 0.25)
     plt.figure(figsize=(15, 9), facecolor=bgColor)
     texts = []
 

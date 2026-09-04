@@ -1,11 +1,15 @@
+import asyncio
 import disnake
 from disnake.ext import tasks, commands
 from tatsu.wrapper import ApiWrapper  # NOTE: may not be needed, unsure at this time
 import json
-from datetime import datetime
+import datetime
 from dateutil.relativedelta import relativedelta
 from graphBuilders import generateTimeGraph
 import dbHelpers
+
+tz = datetime.datetime.now().astimezone().tzinfo
+midnight = datetime.time(hour=0, minute=0, second=0, tzinfo=tz)
 
 
 class graphBotOptions():
@@ -20,20 +24,21 @@ class graphBotOptions():
         self.scoresToKeep = config["scoresToKeep"]
 
 class graphBotClient(commands.InteractionBot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Create a custom flag that starts as False
+        self.guildTransformed = asyncio.Event()
+
     async def on_ready(self):
         try:
-            options.guild = await client.fetch_guild(options.guild)
+            options.guild = await self.fetch_guild(options.guild)
         except BaseException as err:
             print(f"Error transforming guild ID to an object, please double check your config file before reporting this error!\nn{err=}")
             exit(1)
         else:
             print(f"Logged on as {self.user}!")
+            self.guildTransformed.set()
 
-    try:
-        options = graphBotOptions("./configFile")
-    except BaseException as err:
-        print(f"Error generating configuration, double check your config file!\n{err=}")
-        exit(1)
 
 class databasePoller(commands.Cog):
     def __init__(self, bot):
@@ -43,14 +48,34 @@ class databasePoller(commands.Cog):
     def cog_unload(self):
         self.poll.cancel()
 
-    @tasks.loop(seconds=30.0)
+    @tasks.loop(minutes=1)
     async def poll(self):
+        print('Polling API')
         await dbHelpers.getGuildRankings(self.bot.options)
+        print('Database updated')
 
     @poll.before_loop
-    async def before_poll(self):
-        print('waiting for ready...')
-        await self.bot.wait_until_ready()
+    async def await_ready(self):
+        await self.bot.guildTransformed.wait()
+        self.poll.change_interval(minutes=self.bot.options.updateInterval)
+
+class databaseCleaner(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self.poll.start()
+
+    def cog_unload(self):
+        self.poll.cancel()
+
+    @tasks.loop(time=midnight)
+    async def clean(self):
+        print('Beginning database cleanup')
+        cleaned = await dbHelpers.cleanDB(self.bot.options)
+        print(f'Database cleaned of {cleaned} users and their associated scores')
+
+    @clean.before_loop
+    async def await_ready(self):
+        await self.bot.guildTransformed.wait()
 
 
 
@@ -72,9 +97,9 @@ try:
 except BaseException as err:
     print(err)
 
-# TODO: build suggestion generators for the datetime entries
+# TODO: build suggestion generators for the datetime.datetime entries
 @client.slash_command(name="graph", description="draw a graph based on your user") # inform system we are registering a new command
-async def graph(interaction, users_to_include=11, before_date=False, after_date=datetime.now()-relativedelta(years=1), use_nickname=True): # define new command
+async def graph(interaction, users_to_include=11, before_date=False, after_date=datetime.datetime.now()-relativedelta(years=1), use_nickname=True): # define new command
     """
     Remove all attachments from an archive post
 
@@ -95,7 +120,7 @@ async def graph(interaction, users_to_include=11, before_date=False, after_date=
         await interaction.edit_original_response(content=f"Uh oh, An error has occured `{err.code=}`") # inform user of failure
 
 @client.slash_command(name="graph_top", description="draw a graph based on your user") # inform system we are registering a new command
-async def graphTop(interaction, users_to_include=10, before_date=False, after_date=datetime.now()-relativedelta(years=1), use_nickname=True): # define new command
+async def graphTop(interaction, users_to_include=10, before_date=False, after_date=datetime.datetime.now()-relativedelta(years=1), use_nickname=True): # define new command
     """
     Remove all attachments from an archive post
 
@@ -116,5 +141,6 @@ async def graphTop(interaction, users_to_include=10, before_date=False, after_da
 
 
 # TODO: Create task items for regular api polling
+client.add_cog(databasePoller(client))
 
 client.run(options.token) # run client

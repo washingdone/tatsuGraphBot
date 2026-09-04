@@ -6,14 +6,14 @@ from datetime import datetime
 
 #TODO: replace config json pull with object pull once passing config through bot class
 async def cleanDB(config):
-    tatsuApi = ApiWrapper(key=config["tatsuKey"])
-    result = await tatsuApi.get_guild_rankings(config["discordGuildID"])
+    tatsuApi = ApiWrapper(key=config.apiKey)
+    result = await tatsuApi.get_guild_rankings(config.guild.id)
     rankings = result.rankings
     activeUserIDs = [u.user_id for u in rankings]
 
     if not activeUserIDs:
-        print(f"whoops, looks like there are no active scores!")
-        return
+        print(f"Tatsu API reported no active scores - aborting database cleanup")
+        return -1
 
     with sqlite3.connect("graphBot.db") as conn:
         with closing(conn.cursor()) as cursor:
@@ -28,6 +28,9 @@ async def cleanDB(config):
             DELETE FROM users
             WHERE id NOT IN (SELECT id FROM active_ids)
             """)
+
+            removedUsers = cursor.rowcount
+    return removedUsers
 
 
 #TODO: replace config json pull with object pull once passing config through bot class

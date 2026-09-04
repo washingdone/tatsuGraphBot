@@ -114,6 +114,7 @@ async def generateTimeGraph(client, requesterID, optionTuple):
     # NOTE: may not be needed
     axisColor = '#1e1f22'
     bgColor = (0.75, 0.75, 0.75, 0.25)
+    pathEffect = patheffects.withStroke(linewidth=1.5, foreground=(1, 1, 1, 0.75))
     plt.figure(figsize=(15, 9), facecolor=bgColor)
     texts = []
 
@@ -150,9 +151,7 @@ async def generateTimeGraph(client, requesterID, optionTuple):
             )
 
             # Add a 3-pixel wide semi-transparent white outline around the text
-            txt.set_path_effects([
-                patheffects.withStroke(linewidth=1.5, foreground=(1, 1, 1, 0.75))
-            ])
+            txt.set_path_effects([pathEffect])
             texts.append(txt)
 
     if isTop:
@@ -179,7 +178,7 @@ async def generateTimeGraph(client, requesterID, optionTuple):
     
     axis.tick_params(colors=axisColor, which='both', width=1.5)
     for tick in axis.get_xticklabels() + axis.get_yticklabels():
-        tick.set_path_effects([patheffects.withStroke(linewidth=1.5, foreground='white', alpha=0.8)])
+        tick.set_path_effects([pathEffect])
 
     for spine in axis.spines.values():
         spine.set_color(axisColor)
